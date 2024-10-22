@@ -1,0 +1,23 @@
+version: '3'
+services:
+  node-app:
+    image: kooroushpsnd/licenger-back
+    env_file:
+      - ./.env
+    depends_on:
+      - mongo
+    ports:
+      - "4000:4000"
+    
+  mongo:
+    image: mongo:4.4
+    volumes:
+      - mongo-db:/data/db
+
+  vue-js:
+    image: kooroushpsnd/licenger-front
+    ports:
+      - "8080:8080"
+    
+volumes:
+  mongo-db:

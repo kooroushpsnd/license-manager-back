@@ -1,0 +1,82 @@
+name: express app
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+
+      - name: set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run test
+        run: npm run test
+  docker:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: check out code
+        uses: actions/checkout@v2
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: build dockerfile
+        run: |
+          docker build -t kooroushpsnd/licenger-back .
+
+      - name: Push Docker image
+        run: |
+          docker push kooroushpsnd/licenger-back
+
+      - name: Run Docker container
+        run: |
+          docker run --name Licenger-back -d kooroushpsnd/licenger-back 
+
+      - name: Stop Docker container
+        run: |
+          docker stop Licenger-back
+          docker rm Licenger-back
+  
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      statuses: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
